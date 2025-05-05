@@ -356,20 +356,21 @@ export class ProjectService {
 		});
 	}
 
-	/**
-   * Adiciona um usuário ao projeto com role e tenantId
-   */
-	async addUser(
+	
+    // Adiciona um usuário ao projeto com role e tenantId usando QueryBuilder para garantir tenant correto
+   	async addUser(
 		projectId: string,
 		userId: string,
 		role: ProjectRole,
-		tenantId: string | number,
-	  ): Promise<ProjectRelation> {
-		// assemble DeepPartial without tenantId, then assign tenantId dynamically
-		const rel = this.projectRelationRepository.create({ projectId, userId, role });
-		// tenantId pode ser string ou number, converte se necessário
-		(rel as any).tenantId = typeof tenantId === 'string' ? Number(tenantId) : tenantId;
-		return this.projectRelationRepository.save(rel as any);
+		tenantId: string,
+	  ): Promise<void> {
+		// Casting to any to allow insertion of tenantId mesmo sem propriedade no DeepPartial
+		await this.projectRelationRepository
+		  .createQueryBuilder()
+		  .insert()
+		  .into(ProjectRelation)
+		  .values([{ projectId, userId, role, tenantId } as any])
+		  .execute();
 	}
 
 	async getProject(projectId: string): Promise<Project> {
