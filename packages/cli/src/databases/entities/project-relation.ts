@@ -21,4 +21,8 @@ export class ProjectRelation extends WithTimestamps {
 
 	@PrimaryColumn()
 	projectId: string;
+
+	// Tenant identifier for multitenancy support
+	@Column({ type: 'integer' })
+	tenantId: number;
 }
