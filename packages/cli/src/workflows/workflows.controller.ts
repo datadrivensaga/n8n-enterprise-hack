@@ -172,9 +172,19 @@ export class WorkflowsController {
 			const workflow = await transactionManager.save<WorkflowEntity>(newWorkflow);
 
 			const { projectId, parentFolderId } = req.body;
+
+			// Log para debug
+			this.logger.debug(
+				`[WorkflowsController.create] Getting project for workflow. UserID=${req.user.id}, TenantID=${req.user.tenantId}, WorkflowID=${workflow.id}`,
+			);
+
 			project =
 				projectId === undefined
-					? await this.projectRepository.getPersonalProjectForUser(req.user.id, transactionManager)
+					? await this.projectRepository.getPersonalProjectForUser(
+							req.user.id,
+							transactionManager,
+							req.user.tenantId, // Passar explicitamente o tenantId do usuário
+						)
 					: await this.projectService.getProjectWithScope(
 							req.user,
 							projectId,
@@ -339,9 +349,17 @@ export class WorkflowsController {
 				throw new NotFoundError(`Workflow with ID "${workflowId}" does not exist`);
 			}
 
+			this.logger.debug(
+				`[WorkflowsController.getWorkflow] Workflow entity found (sharing enabled): ID=${workflow.id}, Name=${workflow.name}, TenantID=${workflow.tenantId}`,
+			);
+
 			const enterpriseWorkflowService = this.enterpriseWorkflowService;
 
 			const workflowWithMetaData = enterpriseWorkflowService.addOwnerAndSharings(workflow);
+
+			this.logger.debug(
+				`[WorkflowsController.getWorkflow] Workflow after addOwnerAndSharings: TenantID on metaData object=${workflowWithMetaData.tenantId}, TenantID on original workflow object=${workflow.tenantId}`,
+			);
 
 			await enterpriseWorkflowService.addCredentialsToWorkflow(workflowWithMetaData, req.user);
 
@@ -351,7 +369,24 @@ export class WorkflowsController {
 
 			const scopes = await this.workflowService.getWorkflowScopes(req.user, workflowId);
 
-			return { ...workflowWithMetaData, scopes };
+			// Garantir explicitamente que o tenantId esteja incluído na resposta
+			const currentTenantId = tenantContext.getStore()?.tenantId ?? '1';
+			if (!workflowWithMetaData.tenantId) {
+				workflowWithMetaData.tenantId = currentTenantId;
+				this.logger.debug(
+					`[WorkflowsController.getWorkflow] tenantId ausente no workflow, definindo explicitamente: ${currentTenantId}`,
+				);
+			}
+
+			this.logger.debug(
+				`[WorkflowsController.getWorkflow] Returning workflow (sharing enabled): ID=${workflowWithMetaData.id}, Name=${workflowWithMetaData.name}, FinalTenantID=${workflowWithMetaData.tenantId}`,
+			);
+			this.logger.debug(
+				`[WorkflowsController.getWorkflow] Inspect workflow.tenantId before return: ${workflowWithMetaData.tenantId}`,
+			);
+
+			// Criar uma cópia para evitar modificações após a resposta ser enviada
+			return { ...workflowWithMetaData, scopes, tenantId: workflowWithMetaData.tenantId };
 		}
 
 		// sharing disabled
@@ -373,8 +408,18 @@ export class WorkflowsController {
 			);
 		}
 
+		this.logger.debug(
+			`[WorkflowsController.getWorkflow] Workflow entity found (sharing disabled): ID=${workflow.id}, Name=${workflow.name}, TenantID=${workflow.tenantId}`,
+		);
+
 		const scopes = await this.workflowService.getWorkflowScopes(req.user, workflowId);
 
+		this.logger.debug(
+			`[WorkflowsController.getWorkflow] Returning workflow (sharing disabled): ID=${workflow.id}, Name=${workflow.name}, FinalTenantID=${workflow.tenantId}`,
+		);
+		this.logger.debug(
+			`[WorkflowsController.getWorkflow] Inspect workflow.tenantId before return: ${workflow.tenantId}`,
+		);
 		return { ...workflow, scopes };
 	}
 

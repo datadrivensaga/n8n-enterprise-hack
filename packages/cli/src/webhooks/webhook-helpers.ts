@@ -49,6 +49,7 @@ import { finished } from 'stream/promises';
 import { ActiveExecutions } from '@/active-executions';
 import config from '@/config';
 import { MCP_TRIGGER_NODE_TYPE } from '@/constants';
+import { tenantContext } from '@/multitenancy/context';
 import type { Project } from '@/databases/entities/project';
 import { InternalServerError } from '@/errors/response-errors/internal-server.error';
 import { NotFoundError } from '@/errors/response-errors/not-found.error';
@@ -611,6 +612,27 @@ export async function executeWebhook(
 		);
 		runExecutionData = preparedRunExecutionData;
 
+		// Obter o tenantId atual do contexto ou do workflow/workflowData
+		let currentTenantId = tenantContext.getStore()?.tenantId;
+
+		// Se não estiver disponível no contexto, tente obter do workflowData
+		if (!currentTenantId && workflowData && 'tenantId' in workflowData) {
+			currentTenantId = (workflowData as any).tenantId;
+		}
+
+		// Ainda não encontrou, tente obter do objeto workflow
+		if (!currentTenantId && workflow && 'tenantId' in workflow) {
+			currentTenantId = (workflow as any).tenantId;
+		}
+
+		// Nenhum tenantId encontrado, use o padrão '1'
+		if (!currentTenantId) {
+			console.info(
+				`Tenant ID not found for webhook execution of workflow ${workflow.id}. Using default '1'.`,
+			);
+			currentTenantId = '1';
+		}
+
 		const runData: IWorkflowExecutionDataProcess = {
 			executionMode,
 			executionData: runExecutionData,
@@ -618,6 +640,7 @@ export async function executeWebhook(
 			workflowData,
 			pinData,
 			projectId: project?.id,
+			tenantId: currentTenantId,
 		};
 
 		// When resuming from a wait node, copy over the pushRef from the execution-data

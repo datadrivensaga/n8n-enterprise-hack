@@ -1118,6 +1118,7 @@ export function getNodeWebhookPath(
 export function getNodeWebhookUrl(
 	baseUrl: string,
 	workflowId: string,
+	tenantId: string,
 	node: INode,
 	path: string,
 	isFullPath?: boolean,
@@ -1157,7 +1158,7 @@ export function getNodeWebhookUrl(
 
 	// Construir a URL com o tenantId antes do endpoint
 	// Formato: baseUrl/1/endpoint/webhookPath
-	return `${baseWithoutEndpoint}/1/${endpoint}/${webhookPath}`;
+	return `${baseWithoutEndpoint}/${tenantId}/${endpoint}/${webhookPath}`;
 }
 
 export function getConnectionTypes(

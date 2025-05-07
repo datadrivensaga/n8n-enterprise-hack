@@ -2260,6 +2260,7 @@ export interface IWorkflowBase {
 	staticData?: IDataObject;
 	pinData?: IPinData;
 	versionId?: string;
+	tenantId?: string; // Added for multitenancy
 }
 
 export interface IWorkflowCredentials {
@@ -2285,6 +2286,10 @@ export interface IWorkflowExecutionDataProcess {
 	workflowData: IWorkflowBase;
 	userId?: string;
 	projectId?: string;
+	/**
+	 * ID do tenant ao qual a execução pertence
+	 */
+	tenantId?: string;
 	/**
 	 * Defines which version of the partial execution flow is used.
 	 * Possible values are:

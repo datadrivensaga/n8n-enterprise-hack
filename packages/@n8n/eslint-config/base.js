@@ -2,6 +2,42 @@
  * @type {import('@types/eslint').ESLint.ConfigData}
  */
 const config = (module.exports = {
+	// parserOptions and settings added to help resolve TypeScript paths in monorepo
+	parser: '@typescript-eslint/parser', // Ensure TypeScript parser is explicitly set
+	parserOptions: {
+		project: [
+			// Paths are relative to the monorepo root where ESLint is typically run
+			'./tsconfig.json',
+			'./packages/**/tsconfig.json',
+			// If you have a specific tsconfig for linting, include it:
+			// './tsconfig.eslint.json'
+		],
+		typescriptCompilerMode: true, // Required for typescript-eslint v6+ with ESLint 8+
+		ecmaVersion: 2020, // Or your project's ECMAScript version
+		sourceType: 'module',
+		extraFileExtensions: ['.vue'], // Important if linting .vue files
+	},
+	settings: {
+		'import/resolver': {
+			typescript: {
+				alwaysTryTypes: true, // Helps resolve types for packages
+				project: [
+					// Paths for the resolver, relative to where ESLint runs (monorepo root)
+					'packages/**/tsconfig.json',
+					'./tsconfig.json',
+				],
+			},
+			node: {
+				extensions: ['.js', '.jsx', '.ts', '.tsx', '.d.ts', '.vue'],
+			},
+		},
+		'import/parsers': {
+			'@typescript-eslint/parser': ['.ts', '.tsx', '.d.ts'],
+		},
+		// Define extensions that can be omitted in import statements for the resolver
+		'import/extensions': ['.js', '.jsx', '.ts', '.tsx', '.vue'],
+	},
+
 	ignorePatterns: [
 		'node_modules/**',
 		'dist/**',
@@ -325,6 +361,21 @@ const config = (module.exports = {
 		// ----------------------------------
 		//       eslint-plugin-import
 		// ----------------------------------
+
+		/**
+		 * https://github.com/import-js/eslint-plugin-import/blob/main/docs/rules/extensions.md
+		 */
+		'import/extensions': [
+			'error',
+			'ignorePackages', // ignore for packages in node_modules
+			{
+				js: 'never',
+				jsx: 'never',
+				ts: 'never',
+				tsx: 'never',
+				vue: 'never', // if you are using .vue files
+			},
+		],
 
 		/**
 		 * https://github.com/import-js/eslint-plugin-import/blob/main/docs/rules/no-cycle.md

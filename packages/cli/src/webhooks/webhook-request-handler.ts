@@ -9,17 +9,29 @@ import type {
 	WebhookOptionsRequest,
 	WebhookRequest,
 } from '@/webhooks/webhook.types';
+import { WebhookTenantMiddleware } from './webhook-tenant-middleware';
 
 const WEBHOOK_METHODS: IHttpRequestMethods[] = ['DELETE', 'GET', 'HEAD', 'PATCH', 'POST', 'PUT'];
 
 class WebhookRequestHandler {
 	constructor(private readonly webhookManager: IWebhookManager) {}
 
+	private get webhookTenantMiddleware() {
+		return Container.get(WebhookTenantMiddleware);
+	}
+
 	/**
 	 * Handles an incoming webhook request. Handles CORS and delegates the
 	 * request to the webhook manager to execute the webhook.
 	 */
 	async handleRequest(req: WebhookRequest | WebhookOptionsRequest, res: express.Response) {
+		// Aplicar o middleware de tenant primeiro
+		await new Promise<void>((resolve) => {
+			this.webhookTenantMiddleware.webhookTenantMiddleware()(req as WebhookRequest, res, () =>
+				resolve(),
+			);
+		});
+
 		const method = req.method;
 
 		if (method !== 'OPTIONS' && !WEBHOOK_METHODS.includes(method)) {

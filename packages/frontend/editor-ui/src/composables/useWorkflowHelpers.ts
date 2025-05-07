@@ -55,6 +55,7 @@ import { useNDVStore } from '@/stores/ndv.store';
 import { useNodeTypesStore } from '@/stores/nodeTypes.store';
 import { useTemplatesStore } from '@/stores/templates.store';
 import { useUIStore } from '@/stores/ui.store';
+import { useUsersStore } from '@/stores/users.store';
 import { useWorkflowsStore } from '@/stores/workflows.store';
 import { getSourceItems } from '@/utils/pairedItemUtils';
 import { useSettingsStore } from '@/stores/settings.store';
@@ -70,7 +71,6 @@ import { useTelemetry } from '@/composables/useTelemetry';
 import { useProjectsStore } from '@/stores/projects.store';
 import { useTagsStore } from '@/stores/tags.store';
 import { useWorkflowsEEStore } from '@/stores/workflows.ee.store';
-import { useNpsSurveyStore } from '@/stores/npsSurvey.store';
 
 export type ResolveParameterOptions = {
 	targetItem?: TargetItem;
@@ -533,7 +533,7 @@ export function useWorkflowHelpers(options: { router: ReturnType<typeof useRoute
 			active: workflowsStore.isWorkflowActive,
 			settings: workflowsStore.workflow.settings,
 			tags: workflowsStore.workflowTags,
-			versionId: workflowsStore.workflow.versionId,
+			versionId: workflowsStore.workflowVersionId,
 			meta: workflowsStore.workflow.meta,
 		};
 
@@ -681,26 +681,38 @@ export function useWorkflowHelpers(options: { router: ReturnType<typeof useRoute
 		node: INode,
 		showUrlFor: 'test' | 'production',
 	): string {
-		const { nodeType, restartWebhook } = webhookData;
-		if (restartWebhook === true) {
-			return nodeType === 'form' ? '$execution.resumeFormUrl' : '$execution.resumeUrl';
+		const settingsStore = useSettingsStore();
+
+		let determinedBaseUrl: string;
+
+		if (showUrlFor === 'test') {
+			const editorBase = settingsStore.settings.urlBaseEditor;
+			const testEndpoint = settingsStore.settings.endpointWebhookTest;
+
+			if (typeof editorBase !== 'string' || !editorBase.trim()) {
+				console.warn('[useWorkflowHelpers] urlBaseEditor is not defined or empty.');
+				return 'Error: Editor base URL not configured';
+			}
+			if (typeof testEndpoint !== 'string' || !testEndpoint.trim()) {
+				console.warn('[useWorkflowHelpers] endpointWebhookTest is not defined or empty.');
+				return 'Error: Test webhook endpoint not configured';
+			}
+
+			const cleanEditorBase = editorBase.endsWith('/') ? editorBase.slice(0, -1) : editorBase;
+			const cleanTestEndpoint = testEndpoint.startsWith('/') ? testEndpoint : `/${testEndpoint}`;
+			determinedBaseUrl = cleanEditorBase + cleanTestEndpoint;
+		} else {
+			// 'production'
+			const prodBase = settingsStore.settings.urlBaseWebhook;
+			if (typeof prodBase !== 'string' || !prodBase.trim()) {
+				console.warn('[useWorkflowHelpers] urlBaseWebhook is not defined or empty.');
+				return 'Error: Production webhook base URL not configured';
+			}
+			determinedBaseUrl = prodBase;
 		}
 
-		const baseUrls = {
-			test: {
-				form: rootStore.formTestUrl,
-				mcp: rootStore.mcpTestUrl,
-				webhook: rootStore.webhookTestUrl,
-			},
-			production: {
-				form: rootStore.formUrl,
-				mcp: rootStore.mcpUrl,
-				webhook: rootStore.webhookUrl,
-			},
-		} as const;
-		const baseUrl = baseUrls[showUrlFor][nodeType ?? 'webhook'];
 		const workflowId = workflowsStore.workflowId;
-		const path = getWebhookExpressionValue(webhookData, 'path', true, node.name) ?? '';
+		const nodePath = getWebhookExpressionValue(webhookData, 'path', true, node.name) ?? '';
 		const isFullPath =
 			(getWebhookExpressionValue(
 				webhookData,
@@ -709,7 +721,42 @@ export function useWorkflowHelpers(options: { router: ReturnType<typeof useRoute
 				node.name,
 			) as unknown as boolean) || false;
 
-		return NodeHelpers.getNodeWebhookUrl(baseUrl, workflowId, node, path, isFullPath);
+		const userStore = useUsersStore();
+		let tenantId = workflowsStore.workflow.value?.tenantId as string | undefined;
+
+		// Se não encontrou no workflow, tentar obter do usuário atual
+		if (!tenantId && userStore.currentUser?.tenantId) {
+			tenantId = userStore.currentUser.tenantId;
+			console.info(
+				`[useWorkflowHelpers] Using tenantId ${tenantId} from current user for workflow ID "${
+					workflowsStore.workflowId ?? 'N/A'
+				}".`,
+			);
+
+			// Vamos atualizar o workflow.value para ter o tenantId correto
+			if (workflowsStore.workflow.value) {
+				workflowsStore.workflow.value.tenantId = tenantId;
+			}
+		}
+
+		// Se ainda não tiver um tenantId, usar o default '1'
+		if (!tenantId) {
+			console.warn(
+				`[useWorkflowHelpers] Tenant ID not found on workflow.value or user for workflow ID "${
+					workflowsStore.workflowId ?? 'N/A'
+				}". Defaulting to '1'. Ensure workflow data includes tenantId.`,
+			);
+			tenantId = '1'; // Fallback to '1' if not found, to maintain old behavior in broken scenarios
+		}
+
+		return NodeHelpers.getNodeWebhookUrl(
+			determinedBaseUrl,
+			workflowId,
+			tenantId,
+			node,
+			nodePath,
+			isFullPath,
+		);
 	}
 
 	/**

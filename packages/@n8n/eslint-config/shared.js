@@ -18,15 +18,21 @@ module.exports = (tsconfigRootDir, mode) => {
 
 	const settings = {
 		'import/parsers': {
-			'@typescript-eslint/parser': ['.ts'],
+			'@typescript-eslint/parser': ['.ts', '.tsx', '.d.ts'],
 		},
 
 		'import/resolver': {
 			typescript: {
-				tsconfigRootDir,
+				alwaysTryTypes: true,
+				tsconfigRootDir, // Correct: ES6 shorthand for the 'tsconfigRootDir' variable passed to the function
 				project: './tsconfig.json',
 			},
+			node: {
+				extensions: ['.js', '.jsx', '.ts', '.tsx', '.d.ts', '.vue'],
+			},
 		},
+
+		'import/extensions': ['.js', '.jsx', '.ts', '.tsx', '.vue'],
 	};
 
 	return {

@@ -12,8 +12,16 @@ export class ProjectRepository extends Repository<Project> {
 		super(Project, dataSource.manager);
 	}
 
-	async getPersonalProjectForUser(userId: string, entityManager?: EntityManager) {
-		const tenantId = tenantContext.getStore()?.tenantId ?? '1';
+	async getPersonalProjectForUser(
+		userId: string,
+		entityManager?: EntityManager,
+		userTenantId?: string,
+	) {
+		// Priorizar: 1) tenantId explícito passado como parâmetro 2) contexto do tenant 3) valor padrão '1'
+		const tenantId = userTenantId || tenantContext.getStore()?.tenantId || '1';
+		console.log(
+			`[ProjectRepository.getPersonalProjectForUser] Using tenantId: ${tenantId} for userId: ${userId}`,
+		);
 		const em = entityManager ?? this.manager;
 
 		return await em.findOne(Project, {

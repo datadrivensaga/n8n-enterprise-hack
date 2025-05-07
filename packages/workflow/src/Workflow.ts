@@ -40,6 +40,7 @@ function dedupe<T>(arr: T[]): T[] {
 export interface WorkflowParameters {
 	id?: string;
 	name?: string;
+	tenantId?: string;
 	nodes: INode[];
 	connections: IConnections;
 	active: boolean;
@@ -53,6 +54,8 @@ export class Workflow {
 	id: string;
 
 	name: string | undefined;
+
+	tenantId: string;
 
 	nodes: INodes = {};
 
@@ -81,6 +84,7 @@ export class Workflow {
 	constructor(parameters: WorkflowParameters) {
 		this.id = parameters.id as string; // @tech_debt Ensure this is not optional
 		this.name = parameters.name;
+		this.tenantId = parameters.tenantId as string;
 		this.nodeTypes = parameters.nodeTypes;
 		this.pinData = parameters.pinData;
 

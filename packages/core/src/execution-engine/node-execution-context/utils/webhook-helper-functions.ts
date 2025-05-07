@@ -63,5 +63,12 @@ export function getNodeWebhookUrl(
 		undefined,
 		false,
 	) as boolean;
-	return NodeHelpers.getNodeWebhookUrl(baseUrl, workflow.id, node, path.toString(), isFullPath);
+	return NodeHelpers.getNodeWebhookUrl(
+		baseUrl,
+		workflow.id,
+		workflow.tenantId as string,
+		node,
+		path.toString(),
+		isFullPath,
+	);
 }

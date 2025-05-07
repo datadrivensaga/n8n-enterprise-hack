@@ -25,17 +25,17 @@ import type {
 } from 'n8n-workflow';
 import type PCancelable from 'p-cancelable';
 
+import type { LICENSE_FEATURES, LICENSE_QUOTAS } from './constants';
+import type { Folder } from './databases/entities/folder';
+import type { ExternalHooks } from './external-hooks';
+import type { WorkflowWithSharingsAndCredentials } from './workflows/workflows.types';
+
 import type { ActiveWorkflowManager } from '@/active-workflow-manager';
 import type { AnnotationTagEntity } from '@/databases/entities/annotation-tag-entity.ee';
 import type { AuthProviderType } from '@/databases/entities/auth-identity';
 import type { SharedCredentials } from '@/databases/entities/shared-credentials';
 import type { TagEntity } from '@/databases/entities/tag-entity';
 import type { User } from '@/databases/entities/user';
-
-import type { LICENSE_FEATURES, LICENSE_QUOTAS } from './constants';
-import type { Folder } from './databases/entities/folder';
-import type { ExternalHooks } from './external-hooks';
-import type { WorkflowWithSharingsAndCredentials } from './workflows/workflows.types';
 
 export interface ICredentialsTypeData {
 	[key: string]: CredentialLoadingDetails;
@@ -98,6 +98,9 @@ export interface IWorkflowDb extends IWorkflowBase {
 
 export interface IWorkflowResponse extends IWorkflowBase {
 	id: string;
+	parentFolder?: string;
+	tags?: string[];
+	triggerCount?: number;
 }
 
 export interface IWorkflowToImport
