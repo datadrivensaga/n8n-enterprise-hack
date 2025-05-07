@@ -4,6 +4,8 @@ import querystring from 'querystring';
 import type { PostBindingContext } from 'samlify/types/src/entity';
 import url from 'url';
 
+import { tenantContext } from '@/multitenancy/context';
+
 import { AuthService } from '@/auth/auth.service';
 import { Get, Post, RestController, GlobalScope, Body } from '@/decorators';
 import { AuthError } from '@/errors/response-errors/auth.error';
@@ -128,18 +130,22 @@ export class SamlController {
 				if (isSamlLicensedAndEnabled()) {
 					this.authService.issueCookie(res, loginResult.authenticatedUser, req.browserId);
 					if (loginResult.onboardingRequired) {
-						return res.redirect(this.urlService.getInstanceBaseUrl() + '/1/saml/onboarding');
+						// Usar o tenantId do contexto atual ou o padrão '1'
+						const currentTenantId = tenantContext.getStore()?.tenantId ?? '1';
+						return res.redirect(
+							this.urlService.getInstanceBaseUrl() + `/${currentTenantId}/saml/onboarding`,
+						);
 					} else {
 						const redirectUrl = payload.RelayState ?? '/';
 						// Adicionar o tenantId à URL de redirecionamento
 						const baseUrl = this.urlService.getInstanceBaseUrl();
-						const tenantId = '1'; // Usando o tenantId padrão
+						const currentTenantId = tenantContext.getStore()?.tenantId ?? '1';
 
 						// Se o redirectUrl já começa com /, adicionar o tenantId antes
 						if (redirectUrl.startsWith('/')) {
 							// Verificar se já tem o tenantId no início
-							if (!redirectUrl.startsWith(`/${tenantId}/`)) {
-								return res.redirect(`${baseUrl}/${tenantId}${redirectUrl}`);
+							if (!redirectUrl.startsWith(`/${currentTenantId}/`)) {
+								return res.redirect(`${baseUrl}/${currentTenantId}${redirectUrl}`);
 							}
 						}
 

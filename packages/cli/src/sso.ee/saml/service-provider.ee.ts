@@ -2,27 +2,31 @@ import type { SamlPreferences } from '@n8n/api-types';
 import { Container } from '@n8n/di';
 import type { ServiceProviderInstance } from 'samlify';
 
+import { tenantContext } from '@/multitenancy/context';
 import { UrlService } from '@/services/url.service';
 
 let serviceProviderInstance: ServiceProviderInstance | undefined;
 
 export function getServiceProviderEntityId(): string {
-	// Adicionando o tenantId '1' na URL de metadados
+	// Usar o tenantId do contexto atual ou o padrão '1'
+	const currentTenantId = tenantContext.getStore()?.tenantId ?? '1';
 	const baseUrl = Container.get(UrlService).getInstanceBaseUrl();
-	return `${baseUrl}/1/rest/sso/saml/metadata`;
+	return `${baseUrl}/${currentTenantId}/rest/sso/saml/metadata`;
 }
 
 export function getServiceProviderReturnUrl(): string {
-	// Adicionando o tenantId '1' na URL de redirecionamento
+	// Usar o tenantId do contexto atual ou o padrão '1'
+	const currentTenantId = tenantContext.getStore()?.tenantId ?? '1';
 	const baseUrl = Container.get(UrlService).getInstanceBaseUrl();
-	return `${baseUrl}/1/rest/sso/saml/acs`;
+	return `${baseUrl}/${currentTenantId}/rest/sso/saml/acs`;
 }
 
 export function getServiceProviderConfigTestReturnUrl(): string {
 	// TODO: what is this URL?
-	// Adicionando o tenantId '1' na URL de teste
+	// Usar o tenantId do contexto atual ou o padrão '1'
+	const currentTenantId = tenantContext.getStore()?.tenantId ?? '1';
 	const baseUrl = Container.get(UrlService).getInstanceBaseUrl();
-	return `${baseUrl}/1/config/test/return`;
+	return `${baseUrl}/${currentTenantId}/config/test/return`;
 }
 
 // TODO:SAML: make these configurable for the end user
