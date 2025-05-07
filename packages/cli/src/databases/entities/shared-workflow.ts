@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, PrimaryColumn } from '@n8n/typeorm';
+import { Column, Entity, Index, ManyToOne, PrimaryColumn } from '@n8n/typeorm';
 
 import { WithTimestamps } from './abstract-entity';
 import { Project } from './project';
@@ -22,4 +22,8 @@ export class SharedWorkflow extends WithTimestamps {
 
 	@PrimaryColumn()
 	projectId: string;
+
+	@Index()
+	@Column({ length: 36 })
+	tenantId: string;
 }
