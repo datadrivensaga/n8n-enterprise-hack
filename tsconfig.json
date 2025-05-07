@@ -1,4 +1,28 @@
 {
 	"extends": "./packages/@n8n/typescript-config/tsconfig.common.json",
-	"exclude": ["**/dist/**/*", "**/node_modules/**/*", "cypress"]
+	"files": [],
+	"include": [],
+	"exclude": ["**/dist/**/*", "**/node_modules/**/*", "cypress"],
+	"references": [
+		{ "path": "./packages/cli" },
+		{ "path": "./packages/core" },
+		{ "path": "./packages/extensions" },
+		{ "path": "./packages/frontend" },
+		{ "path": "./packages/node-dev" },
+		{ "path": "./packages/nodes-base" },
+		{ "path": "./packages/workflow" },
+		{ "path": "./packages/@n8n/api-types" },
+		{ "path": "./packages/@n8n/benchmark" },
+		{ "path": "./packages/@n8n/client-oauth2" },
+		{ "path": "./packages/@n8n/codemirror-lang" },
+		{ "path": "./packages/@n8n/config" },
+		{ "path": "./packages/@n8n/di" },
+		{ "path": "./packages/@n8n/extension-sdk" },
+		{ "path": "./packages/@n8n/imap" },
+		{ "path": "./packages/@n8n/json-schema-to-zod" },
+		{ "path": "./packages/@n8n/nodes-langchain" },
+		{ "path": "./packages/@n8n/permissions" },
+		{ "path": "./packages/@n8n/task-runner" },
+		{ "path": "./packages/@n8n/utils" }
+	]
 }

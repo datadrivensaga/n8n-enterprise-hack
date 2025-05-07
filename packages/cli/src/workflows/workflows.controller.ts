@@ -43,6 +43,7 @@ import { ExternalHooks } from '@/external-hooks';
 import { validateEntity } from '@/generic-helpers';
 import type { IWorkflowResponse } from '@/interfaces';
 import { License } from '@/license';
+import { tenantContext } from '@/multitenancy/context';
 import { listQueryMiddleware } from '@/middlewares';
 import { AuthenticatedRequest } from '@/requests';
 import * as ResponseHelper from '@/response-helper';
@@ -96,6 +97,41 @@ export class WorkflowsController {
 		const newWorkflow = new WorkflowEntity();
 
 		Object.assign(newWorkflow, req.body);
+
+		// Garantir que o tenantId seja definido a partir de uma fonte confiável do servidor.
+		// Isso sobrescreverá qualquer tenantId que possa ter vindo do req.body.
+		if (req.user && req.user.tenantId) {
+			newWorkflow.tenantId = req.user.tenantId;
+		} else {
+			// Como fallback, tentar obter do tenantContext.
+			// Isso pode acontecer se req.user não estiver totalmente populado mas o contexto do tenant sim.
+			const currentTenantIdFromContext = tenantContext.getStore()?.tenantId;
+			if (currentTenantIdFromContext) {
+				newWorkflow.tenantId = currentTenantIdFromContext;
+				if (req.user && !req.user.tenantId) {
+					// Logar se req.user.tenantId estava faltando
+					this.logger.warn(
+						'tenantId para WorkflowEntity derivado do tenantContext pois req.user.tenantId estava indisponível.',
+						{ userId: req.user.id, contextTenantId: currentTenantIdFromContext },
+					);
+				} else if (!req.user) {
+					// Logar se req.user estava totalmente indisponível
+					this.logger.warn(
+						'tenantId para WorkflowEntity derivado do tenantContext pois req.user estava indisponível.',
+						{ contextTenantId: currentTenantIdFromContext },
+					);
+				}
+			} else {
+				// Se nenhuma fonte de tenantId estiver disponível, isso é um problema sério.
+				this.logger.error(
+					'Falha ao determinar tenantId para novo workflow. Usuário ou contexto do tenant não encontrado.',
+					{ userId: req.user?.id },
+				);
+				throw new InternalServerError(
+					'Não é possível criar workflow sem um identificador de tenant válido.',
+				);
+			}
+		}
 
 		newWorkflow.versionId = uuid();
 
