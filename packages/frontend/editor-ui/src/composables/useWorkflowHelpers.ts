@@ -70,6 +70,7 @@ import type { useRouter, NavigationGuardNext } from 'vue-router';
 import { useTelemetry } from '@/composables/useTelemetry';
 import { useProjectsStore } from '@/stores/projects.store';
 import { useTagsStore } from '@/stores/tags.store';
+import { useNpsSurveyStore } from '@/stores/npsSurvey.store';
 import { useWorkflowsEEStore } from '@/stores/workflows.ee.store';
 
 export type ResolveParameterOptions = {
