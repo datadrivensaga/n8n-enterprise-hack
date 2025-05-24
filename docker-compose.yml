@@ -22,8 +22,7 @@ services:
     build: .
     restart: unless-stopped
     depends_on:
-      db:
-        condition: service_healthy
+      - db
     environment:
       # Conexão com Postgres
       DB_TYPE: postgresdb
